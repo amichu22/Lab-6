@@ -1,0 +1,307 @@
+---
+title: "Knapsack objects"
+author: "Amish Satish"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+
+# Different knapsack objects and their efficiencies are mapped below
+
+## Brute Force method
+
+This involves going through every iteration of the code and calculate the ideal weight of the objects and the ideal combination of items to fill the knapsack for maximum efficiency.
+
+```{r}
+  
+  
+  brute_force_knapsack <- function(x,W,fast=FALSE){
+  
+  
+  
+  #whether the inputs are non-negative interger values.
+  
+  
+  
+  if(is.data.frame(x) && is.numeric(W)) {
+    
+    if(x[[1]]>0 && x[[2]]>0 && W>0){
+      
+      n<-nrow(x)
+      
+      weights<-x[[1]]
+      
+      values<-x[[2]]
+      
+      Capacity<-W
+      
+      bestValue<- 0
+      
+      bestChoice<-c()
+      
+      bestWeight<-0
+      
+      A<- rep(0,n)
+      
+      
+      
+      for (i in 1:(2^n))
+        
+      {
+        
+        
+        
+        j<-n
+        
+        tempWeight<-0
+        
+        tempValue<-0
+        
+        while(A[j]!= 0 && j>0){
+          
+          A[j]<-0
+          
+          j<- j-1
+          
+        }
+        
+        
+        
+        A[j]<- 1
+        
+        
+        
+        for (k in 1:n){
+          
+          if(A[k] == 1) 
+            
+          {
+            
+            tempWeight<-tempWeight+ weights[k]
+            
+            tempValue<-tempValue+values[k]
+            
+          }
+          
+        }
+        
+        
+        
+        if (fast==FALSE){
+          
+          if((tempValue > bestValue) && (tempWeight<= Capacity)){
+            
+            bestValue<-tempValue
+            
+            bestWeight<-tempWeight
+            
+            bestChoice<-which(A==1)   
+            
+          }
+          
+        }
+        
+        else
+          
+        {
+          
+          library(Rcpp)
+          
+          Rcpp::cppFunction(' int abc(int tempValue, int bestValue, int tempWeight,
+                            
+                            int Capacity, int bestWeight){
+                            
+                            
+                            
+                            if((tempValue > bestValue) && (tempWeight<= Capacity)){
+                            
+                            bestValue=tempValue;
+                            
+                            bestWeight=tempWeight;
+                            
+                            
+                            
+                            
+                            
+                            }
+                            
+                            return bestValue;
+                            
+                            
+                            
+                            } ')
+
+          bestValue<-abc(tempValue,bestValue,tempWeight,
+                         
+                         Capacity,bestWeight)
+          
+        }
+        
+        
+        
+      }
+      
+      
+      
+      
+      
+      
+      
+      return(list(value=round(bestValue), elements=bestChoice))
+      
+      
+      
+  }
+    
+    else stop("Data is not positive ! \n",call. = FALSE)
+    
+}
+  
+  else
+    
+    stop("Data is not numeric or not dataframe ! \n",call. = FALSE)
+  
+}
+      
+```
+
+
+##Greedy method
+
+```{r}
+
+greedy_knapsack<-function(x,W){
+  
+  
+  
+  #whether the inputs are non-negative interger values. 
+  
+  if(is.data.frame(x) && is.numeric(W)) {
+    
+    if(x[[1]]>0 && x[[2]]>0 && W>0){
+      
+      n<-nrow(x)
+      
+      weights<-x[[1]]
+      
+      values<-x[[2]]
+      
+      Capacity<-W
+      
+      ratio<-c()
+      
+      knapsack<-0
+      
+      item<-c()
+      
+      
+      
+      ratio<- values/weights
+      
+      
+      
+      
+      
+      yy<-sort(ratio,index.return=TRUE,decreasing = TRUE)
+      
+      values_updated <- values[yy$ix]
+      
+      weights_updated<-weights[yy$ix]
+      
+      
+      
+      k<-Capacity
+      
+      
+      
+      j=1
+      
+      while(k>=weights_updated[j]){
+        
+        k<-k-weights_updated[j]
+        
+        item<-append(item,yy$ix[j])
+        
+        knapsack<-knapsack+values_updated[j]
+        
+        j=j+1
+        
+        
+        
+      }
+      
+      
+      
+      
+      
+      return(list(value=round(knapsack),elements=item))
+      
+    }
+    
+    else stop("Data is not positive ! \n",call. = FALSE)
+    
+  }
+  
+  else
+    
+    stop("Data is not numeric or not dataframe ! \n",call. = FALSE)
+  
+}
+
+
+```
+
+
+The same problem is solved using the greedy algorithm that creates a table of item,weight,value and density of all the objects. Another table is created to check the weight of the items with the total weight in the knapsack. Lets say we have 1 Unit weight space left in the knapsack, and we have an item of 3 unit weights, the algorithm divides the weight into 3 parts and uses the 1 unit weight and discards the excess ie. 2 unit weights.
+
+## Dynamic method
+
+```{r}
+
+knapsack_dynamic<-function(x,W){
+  stopifnot(is.data.frame(x)== TRUE && is.numeric(W)== TRUE)  
+  stopifnot(x[[1]]>0 && x[[2]]>0 && W>0)
+  
+  values<-as.vector(x[[2]])
+  weights<-as.vector(x[[1]])
+  n<- nrow(x)
+  m<-W
+  it<-c()
+  sol.matrix<-matrix(0,nrow = n+1,ncol = m+1)
+  
+  for(i in 2:n){
+    for(j in 1:m){
+      if(weights[i]>j)
+        sol.matrix[i,j]<-sol.matrix[i-1,j]
+      else
+        sol.matrix[i,j]<-max( sol.matrix[i-1,j], sol.matrix[i-1,j-weights[i]]+values[i])
+    }
+  }
+  
+  knapsack<-round(sol.matrix[n,m])
+  
+  
+  
+  while(m>0 && n-1>0){
+    
+    if(sol.matrix[n,m]!=sol.matrix[n-1,m]){
+      it<-append(it,n)
+      m<-m-weights[n]
+    }
+    n<-n-1
+  }
+  return(list(value=knapsack,elements=sort(it)))
+  
+  
+  
+}
+
+
+```
+
+Creates a matrix to calculate the the different weights and the combination of said weights to find the best fit within the given weight limit in the bag.
+
+
+

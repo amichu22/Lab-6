@@ -103,7 +103,3 @@ greedy_knapsack<-function(x,W){
     stop("Data is not numeric or not dataframe ! \n",call. = FALSE)
   
 }
-
-
-
-#greedy_knapsack(x = knapsack_objects[1:800,], W = 3500)
