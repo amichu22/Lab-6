@@ -1,0 +1,14 @@
+Package: Lab6
+Type: Package
+Title: Knapsack Algorithm
+Version: 1.0
+Date: 2017-10-31
+Author: Amish Satish and Balaji Ramkumar
+Maintainer: <Amish.Satish93@gmail.com>
+Description: Knapsack using greedy,dynamic and brute force
+License: GPL-2
+Suggests: testthat,
+    knitr,
+    rmarkdown
+RoxygenNote: 6.0.1.9000
+VignetteBuilder: knitr
